@@ -4,16 +4,19 @@ import com.project.backend.invoice_management_system.auth.model.User;
 import com.project.backend.invoice_management_system.invoice.dto.InvoiceRequest;
 import com.project.backend.invoice_management_system.invoice.dto.InvoiceResponse;
 import com.project.backend.invoice_management_system.invoice.service.InvoiceService;
+import com.project.backend.invoice_management_system.common.dto.ApiResponse;
+import com.project.backend.invoice_management_system.common.util.ResponseBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 
 @RestController
+@CrossOrigin
 @RequestMapping("/api/v1/invoices")
 @RequiredArgsConstructor
 public class InvoiceController {
@@ -21,28 +24,28 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
 
     @PostMapping
-    public ResponseEntity<InvoiceResponse> createInvoice(
+    public ResponseEntity<ApiResponse<InvoiceResponse>> createInvoice(
             @Valid @RequestBody InvoiceRequest request,
             @AuthenticationPrincipal User user
     ) {
         InvoiceResponse response = invoiceService.createInvoice(request, user);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseBuilder.created(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<InvoiceResponse>> getAllInvoices(
+    public ResponseEntity<ApiResponse<List<InvoiceResponse>>> getAllInvoices(
             @AuthenticationPrincipal User user
     ) {
         List<InvoiceResponse> response = invoiceService.getAllInvoices(user);
-        return ResponseEntity.ok(response);
+        return ResponseBuilder.ok(response);
     }
 
     @GetMapping("/{invoiceId}")
-    public ResponseEntity<InvoiceResponse> getInvoiceById(
+    public ResponseEntity<ApiResponse<InvoiceResponse>> getInvoiceById(
             @PathVariable Long invoiceId,
             @AuthenticationPrincipal User user
     ) {
         InvoiceResponse response = invoiceService.getInvoiceById(invoiceId, user);
-        return ResponseEntity.ok(response);
+        return ResponseBuilder.ok(response);
     }
 }

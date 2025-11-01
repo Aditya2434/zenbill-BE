@@ -4,16 +4,19 @@ import com.project.backend.invoice_management_system.auth.model.User;
 import com.project.backend.invoice_management_system.client.dto.ClientRequest;
 import com.project.backend.invoice_management_system.client.dto.ClientResponse;
 import com.project.backend.invoice_management_system.client.service.ClientService;
+import com.project.backend.invoice_management_system.common.dto.ApiResponse;
+import com.project.backend.invoice_management_system.common.util.ResponseBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 
 @RestController
+@CrossOrigin
 @RequestMapping("/api/v1/clients")
 @RequiredArgsConstructor
 public class ClientController {
@@ -26,23 +29,23 @@ public class ClientController {
      * from the JWT token.
      */
     @PostMapping
-    public ResponseEntity<ClientResponse> createClient(
+    public ResponseEntity<ApiResponse<ClientResponse>> createClient(
             @Valid @RequestBody ClientRequest clientRequest,
             @AuthenticationPrincipal User user
     ) {
         ClientResponse response = clientService.createClient(clientRequest, user);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseBuilder.created(response);
     }
 
     /**
      * Gets all clients for the logged-in user.
      */
     @GetMapping
-    public ResponseEntity<List<ClientResponse>> getAllClients(
+    public ResponseEntity<ApiResponse<List<ClientResponse>>> getAllClients(
             @AuthenticationPrincipal User user
     ) {
         List<ClientResponse> response = clientService.getAllClients(user);
-        return ResponseEntity.ok(response);
+        return ResponseBuilder.ok(response);
     }
 
     /**
@@ -50,25 +53,25 @@ public class ClientController {
      * Our service logic ensures the user can only get their own client.
      */
     @GetMapping("/{clientId}")
-    public ResponseEntity<ClientResponse> getClientById(
+    public ResponseEntity<ApiResponse<ClientResponse>> getClientById(
             @PathVariable Long clientId,
             @AuthenticationPrincipal User user
     ) {
         ClientResponse response = clientService.getClientById(clientId, user);
-        return ResponseEntity.ok(response);
+        return ResponseBuilder.ok(response);
     }
 
     /**
      * Updates a client by ID.
      */
     @PutMapping("/{clientId}")
-    public ResponseEntity<ClientResponse> updateClient(
+    public ResponseEntity<ApiResponse<ClientResponse>> updateClient(
             @PathVariable Long clientId,
             @Valid @RequestBody ClientRequest clientRequest,
             @AuthenticationPrincipal User user
     ) {
         ClientResponse response = clientService.updateClient(clientId, clientRequest, user);
-        return ResponseEntity.ok(response);
+        return ResponseBuilder.ok(response);
     }
 
     /**
