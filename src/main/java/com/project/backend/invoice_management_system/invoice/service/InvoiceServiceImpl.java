@@ -7,6 +7,8 @@ import com.project.backend.invoice_management_system.company.model.Company;
 import com.project.backend.invoice_management_system.document.service.NumberSequenceService;
 import com.project.backend.invoice_management_system.invoice.dto.InvoiceRequest;
 import com.project.backend.invoice_management_system.invoice.dto.InvoiceResponse;
+import com.project.backend.invoice_management_system.invoice.dto.InvoiceDetailResponse;
+import com.project.backend.invoice_management_system.invoice.dto.InvoiceItemDto;
 import com.project.backend.invoice_management_system.invoice.model.Invoice;
 import com.project.backend.invoice_management_system.invoice.model.InvoiceItem;
 import com.project.backend.invoice_management_system.invoice.repository.InvoiceRepository;
@@ -161,6 +163,64 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", invoiceId));
         return invoiceToResponse(invoice);
+    }
+
+    @Override
+    public InvoiceDetailResponse getInvoiceDetailsById(Long invoiceId, User currentUser) {
+        Company company = getCompanyFromUser(currentUser);
+        Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", invoiceId));
+
+        return InvoiceDetailResponse.builder()
+                .id(invoice.getId())
+                .companyId(invoice.getCompany().getId())
+                .invoiceNumber(invoice.getInvoiceNumber())
+                .invoiceDate(invoice.getInvoiceDate())
+                .transportMode(invoice.getTransportMode())
+                .vehicleNo(invoice.getVehicleNo())
+                .dateOfSupply(invoice.getDateOfSupply())
+                .placeOfSupply(invoice.getPlaceOfSupply())
+                .orderNumber(invoice.getOrderNumber())
+                .taxOnReverseCharge(invoice.getTaxOnReverseCharge())
+                .grLrNo(invoice.getGrLrNo())
+                .eWayBillNo(invoice.getEWayBillNo())
+                .billedToName(invoice.getBilledToName())
+                .billedToAddress(invoice.getBilledToAddress())
+                .billedToGstin(invoice.getBilledToGstin())
+                .billedToState(invoice.getBilledToState())
+                .billedToCode(invoice.getBilledToCode())
+                .shippedToName(invoice.getShippedToName())
+                .shippedToAddress(invoice.getShippedToAddress())
+                .shippedToGstin(invoice.getShippedToGstin())
+                .shippedToState(invoice.getShippedToState())
+                .shippedToCode(invoice.getShippedToCode())
+                .items(invoice.getItems().stream().map(item ->
+                        InvoiceItemDto.builder()
+                                .description(item.getDescription())
+                                .hsnCode(item.getHsnCode())
+                                .uom(item.getUom())
+                                .quantity(item.getQuantity())
+                                .rate(item.getRate())
+                                .build()
+                ).collect(java.util.stream.Collectors.toList()))
+                .cgstRate(invoice.getCgstRate())
+                .cgstAmount(invoice.getCgstAmount())
+                .sgstRate(invoice.getSgstRate())
+                .sgstAmount(invoice.getSgstAmount())
+                .igstRate(invoice.getIgstRate())
+                .igstAmount(invoice.getIgstAmount())
+                .totalAmountBeforeTax(invoice.getTotalAmountBeforeTax())
+                .totalTaxAmount(invoice.getTotalTaxAmount())
+                .totalAmountAfterTax(invoice.getTotalAmountAfterTax())
+                .totalAmountInWords(invoice.getTotalAmountInWords())
+                .selectedBankName(invoice.getSelectedBankName())
+                .selectedAccountName(invoice.getSelectedAccountName())
+                .selectedAccountNumber(invoice.getSelectedAccountNumber())
+                .selectedIfscCode(invoice.getSelectedIfscCode())
+                .termsAndConditions(invoice.getTermsAndConditions())
+                .jurisdictionCity(invoice.getJurisdictionCity())
+                .pdfUrl(invoice.getPdfUrl())
+                .build();
     }
 
     // --- HELPER METHODS ---

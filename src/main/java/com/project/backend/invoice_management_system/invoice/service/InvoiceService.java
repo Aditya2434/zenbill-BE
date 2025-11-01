@@ -3,6 +3,7 @@ package com.project.backend.invoice_management_system.invoice.service;
 import com.project.backend.invoice_management_system.auth.model.User;
 import com.project.backend.invoice_management_system.invoice.dto.InvoiceRequest;
 import com.project.backend.invoice_management_system.invoice.dto.InvoiceResponse;
+import com.project.backend.invoice_management_system.invoice.dto.InvoiceDetailResponse;
 
 import java.util.List;
 
@@ -34,6 +35,11 @@ public interface InvoiceService {
      * @return The invoice DTO
      */
     InvoiceResponse getInvoiceById(Long invoiceId, User currentUser);
+
+    /**
+     * Retrieves a single invoice with full details by its ID.
+     */
+    InvoiceDetailResponse getInvoiceDetailsById(Long invoiceId, User currentUser);
 
     // We will not implement Update/Delete for now, as invoices are immutable.
 }
