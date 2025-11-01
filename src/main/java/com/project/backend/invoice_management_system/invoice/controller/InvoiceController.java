@@ -58,4 +58,14 @@ public class InvoiceController {
         InvoiceDetailResponse response = invoiceService.getInvoiceDetailsById(invoiceId, user);
         return ResponseBuilder.ok(response);
     }
+
+    @PutMapping("/{invoiceId}")
+    public ResponseEntity<ApiResponse<InvoiceDetailResponse>> updateInvoice(
+            @PathVariable Long invoiceId,
+            @Valid @RequestBody InvoiceRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        InvoiceDetailResponse response = invoiceService.updateInvoice(invoiceId, request, user);
+        return ResponseBuilder.ok(response);
+    }
 }

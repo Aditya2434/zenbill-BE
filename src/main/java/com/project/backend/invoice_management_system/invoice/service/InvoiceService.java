@@ -41,5 +41,10 @@ public interface InvoiceService {
      */
     InvoiceDetailResponse getInvoiceDetailsById(Long invoiceId, User currentUser);
 
+    /**
+     * Updates an existing invoice and returns the full details.
+     */
+    InvoiceDetailResponse updateInvoice(Long invoiceId, InvoiceRequest request, User currentUser);
+
     // We will not implement Update/Delete for now, as invoices are immutable.
 }
