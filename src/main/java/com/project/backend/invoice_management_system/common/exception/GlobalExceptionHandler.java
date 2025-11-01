@@ -97,6 +97,12 @@ public class GlobalExceptionHandler {
 		return ResponseBuilder.error(ex.getMessage(), HttpStatus.CONFLICT, request.getRequestURI());
 	}
 
+	@ExceptionHandler(CompanyAlreadyExistsException.class)
+	public ResponseEntity<?> handleCompanyExists(CompanyAlreadyExistsException ex, HttpServletRequest request) {
+		log.warn("Company already exists at {}", request.getRequestURI());
+		return ResponseBuilder.error(ex.getMessage(), HttpStatus.CONFLICT, request.getRequestURI());
+	}
+
     @ExceptionHandler(org.hibernate.exception.ConstraintViolationException.class)
     public ResponseEntity<?> handleHibernateConstraint(org.hibernate.exception.ConstraintViolationException ex, HttpServletRequest request) {
 		log.warn("Hibernate constraint violation at {}: {}", request.getRequestURI(), ex.getConstraintName());
