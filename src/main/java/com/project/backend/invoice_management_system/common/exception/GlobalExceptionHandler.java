@@ -10,8 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.s
-ecurity.access.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -20,6 +19,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.transaction.TransactionSystemException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -88,6 +88,27 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("Conflict at {}: {}", request.getRequestURI(), ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage());
+		return ResponseBuilder.error("Data integrity violation", HttpStatus.CONFLICT, request.getRequestURI());
+	}
+
+	@ExceptionHandler(EmailAlreadyExistsException.class)
+	public ResponseEntity<?> handleEmailExists(EmailAlreadyExistsException ex, HttpServletRequest request) {
+		log.warn("Email already exists at {}", request.getRequestURI());
+		return ResponseBuilder.error(ex.getMessage(), HttpStatus.CONFLICT, request.getRequestURI());
+	}
+
+    @ExceptionHandler(org.hibernate.exception.ConstraintViolationException.class)
+    public ResponseEntity<?> handleHibernateConstraint(org.hibernate.exception.ConstraintViolationException ex, HttpServletRequest request) {
+		log.warn("Hibernate constraint violation at {}: {}", request.getRequestURI(), ex.getConstraintName());
+		String message = ex.getConstraintName() != null && ex.getConstraintName().toLowerCase().contains("email")
+				? "Email already in use"
+				: "Data integrity violation";
+		return ResponseBuilder.error(message, HttpStatus.CONFLICT, request.getRequestURI());
+	}
+
+	@ExceptionHandler(TransactionSystemException.class)
+	public ResponseEntity<?> handleTransaction(TransactionSystemException ex, HttpServletRequest request) {
+		log.warn("Transaction exception at {}", request.getRequestURI());
 		return ResponseBuilder.error("Data integrity violation", HttpStatus.CONFLICT, request.getRequestURI());
 	}
 

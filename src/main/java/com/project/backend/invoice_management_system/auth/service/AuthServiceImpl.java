@@ -129,6 +129,7 @@ import com.project.backend.invoice_management_system.auth.repository.UserReposit
 import com.project.backend.invoice_management_system.company.model.Company;
 import com.project.backend.invoice_management_system.company.repository.CompanyRepository;
 import com.project.backend.invoice_management_system.security.config.JwtUtils;
+import com.project.backend.invoice_management_system.common.exception.EmailAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -151,7 +152,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public JwtResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalStateException("Email already in use. Please login.");
+            throw new EmailAlreadyExistsException(request.getEmail());
         }
 
         User user = User.builder()
