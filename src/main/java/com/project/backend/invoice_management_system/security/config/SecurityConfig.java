@@ -24,6 +24,9 @@ public class SecurityConfig {
             // Our auth endpoints
             "/api/v1/auth/**",
 
+            // Storage image proxy (uses token in query param for auth)
+            "/api/v1/storage/image",
+
             // Swagger UI
             "/swagger-ui.html",
             "/swagger-ui/**",
