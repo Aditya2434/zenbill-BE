@@ -29,4 +29,9 @@ public interface BankRepository extends JpaRepository<BankDetail, Long> {
      * Finds a bank detail by account number and company ID (excluding a specific bank detail ID).
      */
     Optional<BankDetail> findByAccountNumberAndCompanyIdAndIdNot(String accountNumber, Long companyId, Long excludeId);
+
+    /**
+     * Counts the number of bank accounts for a specific company.
+     */
+    long countByCompanyId(Long companyId);
 }

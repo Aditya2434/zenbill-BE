@@ -24,6 +24,12 @@ public class BankServiceImpl implements BankService {
     public BankResponse createBankDetail(BankRequest bankRequest, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
 
+        // Check if company has reached the maximum limit of 5 bank accounts
+        long bankAccountCount = bankRepository.countByCompanyId(company.getId());
+        if (bankAccountCount >= 5) {
+            throw new IllegalStateException("Maximum limit reached. A user can only have 5 bank accounts.");
+        }
+
         // Check if bank account number already exists for this company
         if (bankRepository.existsByAccountNumberAndCompanyId(bankRequest.getAccountNumber(), company.getId())) {
             throw new IllegalStateException("Bank account number already exists for this company. Please use a different account number.");
