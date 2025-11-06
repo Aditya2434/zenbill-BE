@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +23,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse createProduct(ProductRequest productRequest, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
+
+        // Check if HSN Code already exists for this company (only if HSN Code is provided)
+        if (productRequest.getHsnCode() != null && !productRequest.getHsnCode().trim().isEmpty()) {
+            if (productRepository.existsByHsnCodeAndCompanyId(productRequest.getHsnCode(), company.getId())) {
+                throw new IllegalStateException("HSN Code '" + productRequest.getHsnCode() + "' is already present. Please use a different HSN Code.");
+            }
+        }
 
         Product product = Product.builder()
                 .productName(productRequest.getProductName())
@@ -56,6 +64,15 @@ public class ProductServiceImpl implements ProductService {
         Company company = getCompanyFromUser(currentUser);
         Product product = productRepository.findByIdAndCompanyId(productId, company.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
+
+        // Check if the new HSN Code already exists for this company (excluding current product)
+        if (productRequest.getHsnCode() != null && !productRequest.getHsnCode().trim().isEmpty()) {
+            Optional<Product> existingProduct = productRepository.findByHsnCodeAndCompanyIdAndIdNot(
+                    productRequest.getHsnCode(), company.getId(), productId);
+            if (existingProduct.isPresent()) {
+                throw new IllegalStateException("HSN Code '" + productRequest.getHsnCode() + "' is already present. Please use a different HSN Code.");
+            }
+        }
 
         product.setProductName(productRequest.getProductName());
         product.setHsnCode(productRequest.getHsnCode());
