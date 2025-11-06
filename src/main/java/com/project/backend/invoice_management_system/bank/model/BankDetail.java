@@ -33,6 +33,9 @@ public class BankDetail {
     @Column(nullable = false)
     private String ifscCode;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean active = false;
+
     /**
      * The multi-tenancy link to the owning Company.
      */

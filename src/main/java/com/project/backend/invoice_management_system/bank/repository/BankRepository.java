@@ -34,4 +34,9 @@ public interface BankRepository extends JpaRepository<BankDetail, Long> {
      * Counts the number of bank accounts for a specific company.
      */
     long countByCompanyId(Long companyId);
+
+    /**
+     * Finds all active bank details for a specific company.
+     */
+    List<BankDetail> findByCompanyIdAndActive(Long companyId, boolean active);
 }
