@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,20 +26,28 @@ public class ClientServiceImpl implements ClientService {
         // 1. Get the company of the logged-in user
         Company company = getCompanyFromUser(currentUser);
 
-        // 2. Create a new Client entity from the DTO
+        // 2. Check if a client with the same GSTIN already exists for this company (only if GSTIN is provided)
+        if (clientRequest.getGstinNo() != null && !clientRequest.getGstinNo().trim().isEmpty()) {
+            if (clientRepository.existsByGstinNoAndCompanyId(clientRequest.getGstinNo(), company.getId())) {
+                throw new IllegalStateException("This client is already present. A client with GSTIN '" + 
+                        clientRequest.getGstinNo() + "' already exists.");
+            }
+        }
+
+        // 3. Create a new Client entity from the DTO
         Client client = Client.builder()
                 .clientName(clientRequest.getClientName())
                 .clientAddress(clientRequest.getClientAddress())
                 .gstinNo(clientRequest.getGstinNo())
                 .state(clientRequest.getState())
                 .code(clientRequest.getCode())
-                .company(company) // 3. Set the multi-tenancy link
+                .company(company) // 4. Set the multi-tenancy link
                 .build();
 
-        // 4. Save to the database
+        // 5. Save to the database
         Client savedClient = clientRepository.save(client);
 
-        // 5. Convert to a DTO and return
+        // 6. Convert to a DTO and return
         return clientToResponse(savedClient);
     }
 
@@ -73,14 +82,24 @@ public class ClientServiceImpl implements ClientService {
         Client client = clientRepository.findByIdAndCompanyId(clientId, company.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
-        // 2. Update the fields
+        // 2. Check if the new GSTIN already exists for another client in this company (excluding current client)
+        if (clientRequest.getGstinNo() != null && !clientRequest.getGstinNo().trim().isEmpty()) {
+            Optional<Client> existingClient = clientRepository.findByGstinNoAndCompanyIdAndIdNot(
+                    clientRequest.getGstinNo(), company.getId(), clientId);
+            if (existingClient.isPresent()) {
+                throw new IllegalStateException("This client is already present. A client with GSTIN '" + 
+                        clientRequest.getGstinNo() + "' already exists.");
+            }
+        }
+
+        // 3. Update the fields
         client.setClientName(clientRequest.getClientName());
         client.setClientAddress(clientRequest.getClientAddress());
         client.setGstinNo(clientRequest.getGstinNo());
         client.setState(clientRequest.getState());
         client.setCode(clientRequest.getCode());
 
-        // 3. Save the updated entity
+        // 4. Save the updated entity
         Client updatedClient = clientRepository.save(client);
 
         return clientToResponse(updatedClient);

@@ -28,4 +28,24 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
      * @return An Optional<Client>
      */
     Optional<Client> findByIdAndCompanyId(Long clientId, Long companyId);
+
+    /**
+     * Checks if a client with the given GSTIN already exists for a specific company.
+     *
+     * @param gstinNo The GSTIN number to check
+     * @param companyId The ID of the owning Company
+     * @return true if exists, false otherwise
+     */
+    boolean existsByGstinNoAndCompanyId(String gstinNo, Long companyId);
+
+    /**
+     * Finds a client by GSTIN and company ID (excluding a specific client ID).
+     * Used during updates to check if the new GSTIN is already taken by another client.
+     *
+     * @param gstinNo The GSTIN number to check
+     * @param companyId The ID of the owning Company
+     * @param excludeId The ID of the client to exclude from search
+     * @return An Optional<Client>
+     */
+    Optional<Client> findByGstinNoAndCompanyIdAndIdNot(String gstinNo, Long companyId, Long excludeId);
 }
