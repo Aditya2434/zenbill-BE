@@ -130,6 +130,12 @@ public class GlobalExceptionHandler {
 		return ResponseBuilder.error("Resource not found", HttpStatus.NOT_FOUND, request.getRequestURI());
 	}
 
+	@ExceptionHandler(IllegalStateException.class)
+	public ResponseEntity<?> handleIllegalState(IllegalStateException ex, HttpServletRequest request) {
+		log.warn("Illegal state at {}: {}", request.getRequestURI(), ex.getMessage());
+		return ResponseBuilder.error(ex.getMessage(), HttpStatus.CONFLICT, request.getRequestURI());
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<?> handleAll(Exception ex, HttpServletRequest request) {
         log.error("Unhandled error at {}", request.getRequestURI(), ex);

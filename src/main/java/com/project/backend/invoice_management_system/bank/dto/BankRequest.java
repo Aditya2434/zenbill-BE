@@ -23,4 +23,6 @@ public class BankRequest {
     @NotBlank(message = "IFSC code is required")
     @Size(min = 11, max = 11, message = "IFSC code must be 11 characters")
     private String ifscCode;
+
+    private boolean active = false;
 }

@@ -19,4 +19,24 @@ public interface BankRepository extends JpaRepository<BankDetail, Long> {
      * Finds a single bank detail by its ID AND its owning Company ID.
      */
     Optional<BankDetail> findByIdAndCompanyId(Long bankDetailId, Long companyId);
+
+    /**
+     * Checks if a bank account number already exists for a specific company.
+     */
+    boolean existsByAccountNumberAndCompanyId(String accountNumber, Long companyId);
+
+    /**
+     * Finds a bank detail by account number and company ID (excluding a specific bank detail ID).
+     */
+    Optional<BankDetail> findByAccountNumberAndCompanyIdAndIdNot(String accountNumber, Long companyId, Long excludeId);
+
+    /**
+     * Counts the number of bank accounts for a specific company.
+     */
+    long countByCompanyId(Long companyId);
+
+    /**
+     * Finds all active bank details for a specific company.
+     */
+    List<BankDetail> findByCompanyIdAndActive(Long companyId, boolean active);
 }

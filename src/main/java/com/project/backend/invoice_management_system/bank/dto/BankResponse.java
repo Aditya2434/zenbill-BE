@@ -13,5 +13,6 @@ public class BankResponse {
     private String accountNumber;
     private String bankBranch;
     private String ifscCode;
+    private boolean active;
     private Long companyId;
 }
