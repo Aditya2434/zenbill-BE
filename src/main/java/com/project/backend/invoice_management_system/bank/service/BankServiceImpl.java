@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +23,11 @@ public class BankServiceImpl implements BankService {
     @Override
     public BankResponse createBankDetail(BankRequest bankRequest, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
+
+        // Check if bank account number already exists for this company
+        if (bankRepository.existsByAccountNumberAndCompanyId(bankRequest.getAccountNumber(), company.getId())) {
+            throw new IllegalStateException("Bank account number already exists for this company. Please use a different account number.");
+        }
 
         BankDetail bankDetail = BankDetail.builder()
                 .bankName(bankRequest.getBankName())
@@ -58,6 +64,13 @@ public class BankServiceImpl implements BankService {
         Company company = getCompanyFromUser(currentUser);
         BankDetail bankDetail = bankRepository.findByIdAndCompanyId(bankDetailId, company.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("BankDetail", "id", bankDetailId));
+
+        // Check if the new account number already exists for this company (excluding current record)
+        Optional<BankDetail> existingBankDetail = bankRepository.findByAccountNumberAndCompanyIdAndIdNot(
+                bankRequest.getAccountNumber(), company.getId(), bankDetailId);
+        if (existingBankDetail.isPresent()) {
+            throw new IllegalStateException("Bank account number already exists for this company. Please use a different account number.");
+        }
 
         bankDetail.setBankName(bankRequest.getBankName());
         bankDetail.setAccountName(bankRequest.getAccountName());
