@@ -17,7 +17,7 @@ import java.net.URI;
 public class SupabaseStorageServiceImpl implements SupabaseStorageService {
 
     private final SupabaseConfig supabaseConfig;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -27,17 +27,28 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
         String useBucket = (bucket == null || bucket.isBlank()) ? supabaseConfig.getDefaultBucket() : bucket;
         String url = supabaseConfig.getSupabaseUrl().replaceAll("/$", "") + "/storage/v1/object/" + useBucket + "/" + path;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(contentType != null && !contentType.isBlank() ? contentType : MediaType.APPLICATION_OCTET_STREAM_VALUE));
-        headers.setBearerAuth(supabaseConfig.getServiceRoleKey());
-        headers.add("x-upsert", "true");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(contentType != null && !contentType.isBlank() ? contentType : MediaType.APPLICATION_OCTET_STREAM_VALUE));
+            headers.setBearerAuth(supabaseConfig.getServiceRoleKey());
+            headers.add("x-upsert", "true");
 
-        RequestEntity<byte[]> request = new RequestEntity<>(bytes, headers, HttpMethod.POST, URI.create(url));
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new IllegalStateException("Supabase upload failed: " + response.getStatusCode());
+            RequestEntity<byte[]> request = new RequestEntity<>(bytes, headers, HttpMethod.POST, URI.create(url));
+            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                String errorBody = response.getBody() != null ? response.getBody() : "No error body";
+                throw new IllegalStateException("Supabase upload failed with status " + response.getStatusCode() + 
+                    " for URL: " + url + ". Error: " + errorBody);
+            }
+            
+            System.out.println("✅ Successfully uploaded to Supabase: " + path);
+            return path;
+        } catch (Exception e) {
+            System.err.println("❌ Failed to upload to Supabase. URL: " + url + 
+                ", Bucket: " + useBucket + ", Path: " + path + ". Error: " + e.getMessage());
+            throw new IllegalStateException("Failed to upload to Supabase: " + e.getMessage(), e);
         }
-        return path;
     }
 
     @Override

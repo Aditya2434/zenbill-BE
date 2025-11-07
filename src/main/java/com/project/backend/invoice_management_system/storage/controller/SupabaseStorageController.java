@@ -37,27 +37,47 @@ public class SupabaseStorageController {
             @RequestParam(value = "folder", required = false) String folder,
             @RequestParam(value = "bucket", required = false) String bucket,
             @AuthenticationPrincipal User user
-    ) throws Exception {
-        String safeFolder = (folder == null || folder.isBlank()) ? "company" : folder.replaceAll("^/+|/+$", "");
-        String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
-        String name = UUID.randomUUID().toString() + (ext != null && !ext.isBlank() ? ("." + ext) : "");
-        String path = safeFolder + "/" + name;
+    ) {
+        try {
+            System.out.println("========================================");
+            System.out.println("📤 UPLOAD REQUEST");
+            System.out.println("File: " + file.getOriginalFilename());
+            System.out.println("Size: " + file.getSize() + " bytes");
+            System.out.println("Content Type: " + file.getContentType());
+            System.out.println("Folder: " + folder);
+            System.out.println("Bucket: " + bucket);
+            System.out.println("User: " + user.getEmail());
+            System.out.println("========================================");
+            
+            String safeFolder = (folder == null || folder.isBlank()) ? "company" : folder.replaceAll("^/+|/+$", "");
+            String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
+            String name = UUID.randomUUID().toString() + (ext != null && !ext.isBlank() ? ("." + ext) : "");
+            String path = safeFolder + "/" + name;
 
-        String usedBucket = (bucket == null || bucket.isBlank()) ? supabaseConfig.getDefaultBucket() : bucket;
-        storageService.upload(usedBucket, path, file.getBytes(), file.getContentType());
+            String usedBucket = (bucket == null || bucket.isBlank()) ? supabaseConfig.getDefaultBucket() : bucket;
+            
+            System.out.println("Uploading to: " + usedBucket + "/" + path);
+            storageService.upload(usedBucket, path, file.getBytes(), file.getContentType());
 
-        // Generate a short-lived access token for this image (embedded in URL)
-        String token = jwtUtils.generateToken(user);
-        
-        // Return proxy URL with token in query param (works with <img> tags)
-        String proxyUrl = "/api/v1/storage/image?bucket=" + usedBucket + "&path=" + path + "&token=" + token;
+            // Generate a short-lived access token for this image (embedded in URL)
+            String token = jwtUtils.generateToken(user);
+            
+            // Return proxy URL with token in query param (works with <img> tags)
+            String proxyUrl = "/api/v1/storage/image?bucket=" + usedBucket + "&path=" + path + "&token=" + token;
 
-        UploadResponse response = UploadResponse.builder()
-                .bucket(usedBucket)
-                .path(path)
-                .url(proxyUrl)
-                .build();
-        return ResponseBuilder.ok(response);
+            UploadResponse response = UploadResponse.builder()
+                    .bucket(usedBucket)
+                    .path(path)
+                    .url(proxyUrl)
+                    .build();
+            
+            System.out.println("✅ Upload successful! Proxy URL: " + proxyUrl);
+            return ResponseBuilder.ok(response);
+        } catch (Exception e) {
+            System.err.println("❌ Upload failed: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
+        }
     }
 
     @PostMapping("/sign-url")
