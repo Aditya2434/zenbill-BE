@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: zenbill-backend
+    env: java
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/invoice-management-system-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: JAVA_VERSION
+        value: 20
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DEFAULT_BUCKET
+        value: document
+
