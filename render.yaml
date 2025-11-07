@@ -1,18 +1,12 @@
 services:
   - type: web
     name: zenbill-fullstack
-    env: java
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: java -jar target/invoice-management-system-0.0.1-SNAPSHOT.jar
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: PORT
         value: 8080
-      - key: JAVA_VERSION
-        value: 20
-      - key: FRONTEND_REPO_URL
-        value: https://github.com/Aditya2434/ZenBill-FE.git
-      - key: FRONTEND_BRANCH
-        value: main
       - key: DB_URL
         sync: false
       - key: DB_USERNAME

@@ -1,0 +1,16 @@
+target/
+.mvn/
+mvnw
+mvnw.cmd
+.git
+.gitignore
+*.md
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+node_modules/
+frontend-temp/
+build.sh
+
