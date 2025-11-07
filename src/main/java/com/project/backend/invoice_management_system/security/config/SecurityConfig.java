@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -19,10 +20,14 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     private static final String[] PUBLIC_URLS = {
-            // Our auth endpoints
-            "/api/v1/auth/**",
+            // Public auth endpoints (login, register only)
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            // Note: /api/v1/auth/logout is protected (requires authentication)
+            // Authentication is verified by attempting to access protected endpoints like /api/v1/company
 
             // Storage image proxy (uses token in query param for auth)
             "/api/v1/storage/image",
@@ -36,26 +41,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Disable CSRF (Cross-Site Request Forgery)
+                // 1. Enable CORS with our custom configuration
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+
+                // 2. Disable CSRF (Cross-Site Request Forgery)
                 // We are using stateless JWTs, so this is not needed.
                 .csrf(csrf -> csrf.disable())
 
-                // 2. Define our public (unsecured) endpoints
+                // 3. Define our public (unsecured) endpoints
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated() // All other requests MUST be authenticated
                 )
 
-                // 3. Configure session management to be STATELATE
+                // 4. Configure session management to be STATELESS
                 // This is the most important part.
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 4. Tell Spring to use our custom AuthenticationProvider
+                // 5. Tell Spring to use our custom AuthenticationProvider
                 .authenticationProvider(authenticationProvider)
 
-                // 5. Add our JWT filter *before* the standard username/password filter
+                // 6. Add our JWT filter *before* the standard username/password filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

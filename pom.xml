@@ -14,7 +14,7 @@
 	<description>this is the backend of invoice-management-system</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>20</java.version>
 		<jjwt.version>0.12.5</jjwt.version>
 	</properties>
 
