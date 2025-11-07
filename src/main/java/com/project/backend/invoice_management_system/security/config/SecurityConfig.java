@@ -35,7 +35,20 @@ public class SecurityConfig {
             // Swagger UI
             "/swagger-ui.html",
             "/swagger-ui/**",
-            "/api-docs/**"
+            "/api-docs/**",
+            
+            // Static resources (React frontend)
+            "/",
+            "/index.html",
+            "/favicon.ico",
+            "/assets/**",
+            "/static/**",
+            "/*.js",
+            "/*.css",
+            "/*.png",
+            "/*.jpg",
+            "/*.svg",
+            "/*.ico"
     };
 
     @Bean
