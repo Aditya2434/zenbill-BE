@@ -7,7 +7,7 @@ echo "================================"
 
 # Clone the frontend repository
 echo "Cloning frontend repository..."
-git clone -b ${FRONTEND_BRANCH:-feature/fix} ${FRONTEND_REPO_URL:-https://github.com/Aditya2434/ZenBill-FE.git} frontend-temp
+git clone -b ${FRONTEND_BRANCH:-main} ${FRONTEND_REPO_URL:-https://github.com/Aditya2434/ZenBill-FE.git} frontend-temp
 
 # Build the frontend
 echo "Building frontend..."
