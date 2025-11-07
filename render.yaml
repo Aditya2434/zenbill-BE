@@ -12,7 +12,7 @@ services:
       - key: FRONTEND_REPO_URL
         value: https://github.com/Aditya2434/ZenBill-FE.git
       - key: FRONTEND_BRANCH
-        value: feature/fix
+        value: main
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
