@@ -135,6 +135,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .selectedIfscCode(request.getSelectedIfscCode())
                 .jurisdictionCity(company.getCity()) // Pulled from company
                 .termsAndConditions(request.getTermsAndConditions())
+                .pdfUrl(request.getPdfUrl()) // Store PDF URL from Supabase
                 .build();
 
         // 6. Set the back-reference from items to the invoice
@@ -329,6 +330,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setSelectedIfscCode(request.getSelectedIfscCode());
         invoice.setJurisdictionCity(company.getCity());
         invoice.setTermsAndConditions(request.getTermsAndConditions());
+        
+        // Update PDF URL if provided
+        if (request.getPdfUrl() != null) {
+            invoice.setPdfUrl(request.getPdfUrl());
+        }
 
         Invoice saved = invoiceRepository.save(invoice);
         return getInvoiceDetailsById(saved.getId(), currentUser);
