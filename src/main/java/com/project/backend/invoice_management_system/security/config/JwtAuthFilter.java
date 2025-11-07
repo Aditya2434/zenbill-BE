@@ -2,6 +2,7 @@ package com.project.backend.invoice_management_system.security.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,31 +32,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
+        String jwt = null;
         final String userEmail;
 
-        // 1. Check if the Authorization header is present and correct
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response); // If not, pass to the next filter
+        // 1. Try to get token from Authorization header first (for backward compatibility)
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7); // "Bearer " is 7 chars
+        } 
+        // 2. If not in header, try to get token from cookie
+        else {
+            jwt = getTokenFromCookie(request);
+        }
+
+        // 3. If no token found, pass to next filter
+        if (jwt == null) {
+            filterChain.doFilter(request, response);
             return;
         }
 
-        // 2. Extract the token
-        jwt = authHeader.substring(7); // "Bearer " is 7 chars
-
         try {
-            // 3. Extract the email from the token
+            // 4. Extract the email from the token
             userEmail = jwtUtils.extractUsername(jwt);
 
-            // 4. Check if the user is already authenticated
+            // 5. Check if the user is already authenticated
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // 5. Load the user from the database
+                // 6. Load the user from the database
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-                // 6. Validate the token
+                // 7. Validate the token
                 if (jwtUtils.isTokenValid(jwt, userDetails)) {
-                    // 7. If valid, create an authentication token
+                    // 8. If valid, create an authentication token
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null, // We don't need credentials
@@ -65,7 +72,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request)
                     );
 
-                    // 8. Set the authentication in the SecurityContext
+                    // 9. Set the authentication in the SecurityContext
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
@@ -75,5 +82,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // For now, we just pass the request on without authentication
             filterChain.doFilter(request, response);
         }
+    }
+
+    /**
+     * Helper method to extract JWT token from cookies.
+     * @param request HttpServletRequest
+     * @return JWT token string or null if not found
+     */
+    private String getTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("authToken".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

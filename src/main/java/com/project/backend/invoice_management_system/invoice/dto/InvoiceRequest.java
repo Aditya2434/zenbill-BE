@@ -65,4 +65,7 @@ public class InvoiceRequest {
     // --- Footer ---
     private String termsAndConditions;
     // The jurisdictionCity will be pulled from the user's Company profile
+    
+    // --- PDF URL ---
+    private String pdfUrl; // Public URL of the stored invoice PDF in Supabase
 }
