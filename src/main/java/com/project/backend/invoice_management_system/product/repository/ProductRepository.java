@@ -20,13 +20,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     Optional<Product> findByIdAndCompanyId(Long productId, Long companyId);
 
-    /**
-     * Checks if a product with the given HSN code already exists for a specific company.
-     */
-    boolean existsByHsnCodeAndCompanyId(String hsnCode, Long companyId);
-
-    /**
-     * Finds a product by HSN code and company ID (excluding a specific product ID).
-     */
-    Optional<Product> findByHsnCodeAndCompanyIdAndIdNot(String hsnCode, Long companyId, Long excludeId);
 }

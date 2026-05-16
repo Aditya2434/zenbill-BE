@@ -24,4 +24,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      * Finds an invoice by its number, for security and validation.
      */
     Optional<Invoice> findByInvoiceNumberAndCompanyId(String invoiceNumber, Long companyId);
+
+    /**
+     * Finds all invoices billed to a specific client name within a company.
+     */
+    List<Invoice> findByBilledToNameAndCompanyId(String billedToName, Long companyId);
 }

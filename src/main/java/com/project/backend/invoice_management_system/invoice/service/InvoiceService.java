@@ -46,5 +46,8 @@ public interface InvoiceService {
      */
     InvoiceDetailResponse updateInvoice(Long invoiceId, InvoiceRequest request, User currentUser);
 
-    // We will not implement Update/Delete for now, as invoices are immutable.
+    /**
+     * Retrieves all invoices associated with a specific Client ID.
+     */
+    List<InvoiceResponse> getInvoicesByClientId(Long clientId, User currentUser);
 }

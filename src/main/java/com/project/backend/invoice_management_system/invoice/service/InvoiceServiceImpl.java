@@ -1,6 +1,8 @@
 package com.project.backend.invoice_management_system.invoice.service;
 
 import com.project.backend.invoice_management_system.auth.model.User;
+import com.project.backend.invoice_management_system.client.model.Client;
+import com.project.backend.invoice_management_system.client.repository.ClientRepository;
 import com.project.backend.invoice_management_system.common.exception.ResourceNotFoundException;
 import com.project.backend.invoice_management_system.common.util.AmountInWordsUtil;
 import com.project.backend.invoice_management_system.company.model.Company;
@@ -28,11 +30,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final NumberSequenceService numberSequenceService;
     private final AmountInWordsUtil amountInWordsUtil;
+    private final ClientRepository clientRepository;
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     @Override
-    @Transactional // Ensures this entire operation is atomic
+    @Transactional
     public InvoiceResponse createInvoice(InvoiceRequest request, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
 
@@ -95,7 +98,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         // 4. Convert total to words
         String totalInWords = amountInWordsUtil.convertToWords(totalAmountAfterTax);
 
-        // 5. Build the main Invoice entity (Snapshotting all data)
+        // 5. Build the main Invoice entity
         Invoice invoice = Invoice.builder()
                 .company(company)
                 .invoiceNumber(invoiceNumber)
@@ -118,7 +121,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .shippedToGstin(request.getShippedToGstin())
                 .shippedToState(request.getShippedToState())
                 .shippedToCode(request.getShippedToCode())
-                .items(items) // Set the list of items
+                .items(items)
                 .totalAmountBeforeTax(totalAmountBeforeTax)
                 .cgstRate(cgstRate)
                 .cgstAmount(cgstAmount)
@@ -133,9 +136,9 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .selectedAccountName(request.getSelectedAccountName())
                 .selectedAccountNumber(request.getSelectedAccountNumber())
                 .selectedIfscCode(request.getSelectedIfscCode())
-                .jurisdictionCity(company.getCity()) // Pulled from company
+                .jurisdictionCity(company.getCity())
                 .termsAndConditions(request.getTermsAndConditions())
-                .pdfUrl(request.getPdfUrl()) // Store PDF URL from Supabase
+                .pdfUrl(request.getPdfUrl())
                 .build();
 
         // 6. Set the back-reference from items to the invoice
@@ -143,7 +146,7 @@ public class InvoiceServiceImpl implements InvoiceService {
             item.setInvoice(invoice);
         }
 
-        // 7. Save the invoice (items will be saved by cascade)
+        // 7. Save the invoice
         Invoice savedInvoice = invoiceRepository.save(invoice);
 
         return invoiceToResponse(savedInvoice);
@@ -194,7 +197,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .shippedToAddress(invoice.getShippedToAddress())
                 .shippedToGstin(invoice.getShippedToGstin())
                 .shippedToState(invoice.getShippedToState())
-                .shippedToCode(invoice.getShippedToCode())
+                .shippedToCode(invoice.getShippedToCode()) // <-- FIXED HERE
                 .items(invoice.getItems().stream().map(item ->
                         InvoiceItemDto.builder()
                                 .description(item.getDescription())
@@ -231,7 +234,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", invoiceId));
 
-        // Rebuild items and totals
         BigDecimal totalAmountBeforeTax = BigDecimal.ZERO;
         List<InvoiceItem> newItems = request.getItems().stream()
                 .map(itemDto -> {
@@ -252,7 +254,6 @@ public class InvoiceServiceImpl implements InvoiceService {
             totalAmountBeforeTax = totalAmountBeforeTax.add(item.getAmount());
         }
 
-        // Tax logic (same as create)
         String companyStateCode = company.getCode();
         String clientStateCode = request.getBilledToCode();
 
@@ -281,7 +282,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal totalAmountAfterTax = totalAmountBeforeTax.add(totalTaxAmount);
         String totalInWords = amountInWordsUtil.convertToWords(totalAmountAfterTax);
 
-        // Update invoice fields (preserve invoiceNumber)
         invoice.setInvoiceDate(request.getInvoiceDate());
         invoice.setTransportMode(request.getTransportMode());
         invoice.setVehicleNo(request.getVehicleNo());
@@ -304,14 +304,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setShippedToState(request.getShippedToState());
         invoice.setShippedToCode(request.getShippedToCode());
 
-        // Replace items
         invoice.getItems().clear();
         for (InvoiceItem item : newItems) {
             item.setInvoice(invoice);
         }
         invoice.getItems().addAll(newItems);
 
-        // Totals and tax snapshots
         invoice.setTotalAmountBeforeTax(totalAmountBeforeTax);
         invoice.setCgstRate(cgstRate);
         invoice.setCgstAmount(cgstAmount);
@@ -323,21 +321,33 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setTotalAmountAfterTax(totalAmountAfterTax);
         invoice.setTotalAmountInWords(totalInWords);
 
-        // Bank + footer
         invoice.setSelectedBankName(request.getSelectedBankName());
         invoice.setSelectedAccountName(request.getSelectedAccountName());
         invoice.setSelectedAccountNumber(request.getSelectedAccountNumber());
         invoice.setSelectedIfscCode(request.getSelectedIfscCode());
         invoice.setJurisdictionCity(company.getCity());
         invoice.setTermsAndConditions(request.getTermsAndConditions());
-        
-        // Update PDF URL if provided
+
         if (request.getPdfUrl() != null) {
             invoice.setPdfUrl(request.getPdfUrl());
         }
 
         Invoice saved = invoiceRepository.save(invoice);
         return getInvoiceDetailsById(saved.getId(), currentUser);
+    }
+
+    @Override
+    public List<InvoiceResponse> getInvoicesByClientId(Long clientId, User currentUser) {
+        Company company = getCompanyFromUser(currentUser);
+
+        Client client = clientRepository.findByIdAndCompanyId(clientId, company.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
+
+        // <-- FIXED HERE: Using getClientName()
+        return invoiceRepository.findByBilledToNameAndCompanyId(client.getClientName(), company.getId())
+                .stream()
+                .map(this::invoiceToResponse)
+                .collect(Collectors.toList());
     }
 
     // --- HELPER METHODS ---
@@ -357,7 +367,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .invoiceDate(invoice.getInvoiceDate())
                 .billedToName(invoice.getBilledToName())
                 .totalAmountAfterTax(invoice.getTotalAmountAfterTax())
-                .pdfUrl(invoice.getPdfUrl()) // Will be null for now
+                .pdfUrl(invoice.getPdfUrl())
                 .build();
     }
 }

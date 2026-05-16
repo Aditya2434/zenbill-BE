@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.List;
 
@@ -66,6 +65,16 @@ public class InvoiceController {
             @AuthenticationPrincipal User user
     ) {
         InvoiceDetailResponse response = invoiceService.updateInvoice(invoiceId, request, user);
+        return ResponseBuilder.ok(response);
+    }
+
+    // New Endpoint to get invoices by Client ID
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<ApiResponse<List<InvoiceResponse>>> getInvoicesByClient(
+            @PathVariable Long clientId,
+            @AuthenticationPrincipal User user
+    ) {
+        List<InvoiceResponse> response = invoiceService.getInvoicesByClientId(clientId, user);
         return ResponseBuilder.ok(response);
     }
 }
