@@ -23,20 +23,16 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * The multi-tenancy link to the owning Company.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
     @Column(nullable = false, unique = true)
-    private String invoiceNumber; // e.g., "PRM/2025-2026/001"
+    private String invoiceNumber;
 
     @Column(nullable = false)
     private LocalDate invoiceDate;
 
-    // --- Header Details (from your requirements) ---
     private String transportMode;
     private String vehicleNo;
     private LocalDate dateOfSupply;
@@ -46,7 +42,6 @@ public class Invoice {
     private String grLrNo;
     private String eWayBillNo;
 
-    // --- Billed To (Snapshot) ---
     @Column(nullable = false)
     private String billedToName;
     @Column(length = 500)
@@ -55,7 +50,6 @@ public class Invoice {
     private String billedToState;
     private String billedToCode;
 
-    // --- Shipped To (Snapshot) ---
     @Column(nullable = false)
     private String shippedToName;
     @Column(length = 500)
@@ -64,16 +58,9 @@ public class Invoice {
     private String shippedToState;
     private String shippedToCode;
 
-    // --- Line Items ---
-    /**
-     * This links the Invoice to its line items.
-     * CascadeType.ALL: If this invoice is deleted, delete all its items.
-     * orphanRemoval=true: If an item is removed from this list, delete it from the DB.
-     */
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<InvoiceItem> items;
 
-    // --- Totals (Snapshot) ---
     private BigDecimal totalAmountBeforeTax;
     private BigDecimal cgstRate;
     private BigDecimal cgstAmount;
@@ -87,19 +74,19 @@ public class Invoice {
     @Column(length = 1000)
     private String totalAmountInWords;
 
-    // --- Bank Details (Snapshot) ---
     private String selectedBankName;
     private String selectedAccountName;
     private String selectedAccountNumber;
     private String selectedIfscCode;
 
-    // --- Footer (Snapshot) ---
     private String jurisdictionCity;
     @Column(length = 2000)
     private String termsAndConditions;
 
-    // We will store the URL to the PDF once generated
     private String pdfUrl;
+
+    // Tracks payment status (e.g., "Unpaid", "Paid")
+    private String status;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

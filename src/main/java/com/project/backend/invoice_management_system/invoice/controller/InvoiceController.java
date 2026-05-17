@@ -68,13 +68,21 @@ public class InvoiceController {
         return ResponseBuilder.ok(response);
     }
 
-    // New Endpoint to get invoices by Client ID
     @GetMapping("/client/{clientId}")
     public ResponseEntity<ApiResponse<List<InvoiceResponse>>> getInvoicesByClient(
             @PathVariable Long clientId,
             @AuthenticationPrincipal User user
     ) {
         List<InvoiceResponse> response = invoiceService.getInvoicesByClientId(clientId, user);
+        return ResponseBuilder.ok(response);
+    }
+
+    @PatchMapping("/{invoiceId}/pay")
+    public ResponseEntity<ApiResponse<InvoiceResponse>> markAsPaid(
+            @PathVariable Long invoiceId,
+            @AuthenticationPrincipal User user
+    ) {
+        InvoiceResponse response = invoiceService.markAsPaid(invoiceId, user);
         return ResponseBuilder.ok(response);
     }
 }

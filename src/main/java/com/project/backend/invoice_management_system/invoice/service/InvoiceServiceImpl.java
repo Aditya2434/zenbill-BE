@@ -38,11 +38,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceResponse createInvoice(InvoiceRequest request, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
-
-        // 1. Get the next invoice number
         String invoiceNumber = numberSequenceService.getNextInvoiceNumber(company);
 
-        // 2. Build the line items and calculate Total Amount Before Tax
         BigDecimal totalAmountBeforeTax = BigDecimal.ZERO;
         List<InvoiceItem> items = request.getItems().stream()
                 .map(itemDto -> {
@@ -60,15 +57,12 @@ public class InvoiceServiceImpl implements InvoiceService {
                 })
                 .collect(Collectors.toList());
 
-        // Sum the amounts from the items
         for (InvoiceItem item : items) {
             totalAmountBeforeTax = totalAmountBeforeTax.add(item.getAmount());
         }
 
-        // 3. Perform Tax Logic (as per your rules)
         String companyStateCode = company.getCode();
         String clientStateCode = request.getBilledToCode();
-
         BigDecimal cgstRate = BigDecimal.ZERO;
         BigDecimal cgstAmount = BigDecimal.ZERO;
         BigDecimal sgstRate = BigDecimal.ZERO;
@@ -77,28 +71,19 @@ public class InvoiceServiceImpl implements InvoiceService {
         BigDecimal igstAmount = BigDecimal.ZERO;
 
         if (companyStateCode != null && companyStateCode.equals(clientStateCode)) {
-            // INTRA-STATE
             cgstRate = request.getCgstRate() != null ? request.getCgstRate() : BigDecimal.ZERO;
             sgstRate = request.getSgstRate() != null ? request.getSgstRate() : BigDecimal.ZERO;
-
-            cgstAmount = totalAmountBeforeTax.multiply(cgstRate.divide(ONE_HUNDRED))
-                    .setScale(2, RoundingMode.HALF_UP);
-            sgstAmount = totalAmountBeforeTax.multiply(sgstRate.divide(ONE_HUNDRED))
-                    .setScale(2, RoundingMode.HALF_UP);
+            cgstAmount = totalAmountBeforeTax.multiply(cgstRate.divide(ONE_HUNDRED)).setScale(2, RoundingMode.HALF_UP);
+            sgstAmount = totalAmountBeforeTax.multiply(sgstRate.divide(ONE_HUNDRED)).setScale(2, RoundingMode.HALF_UP);
         } else {
-            // INTER-STATE
             igstRate = request.getIgstRate() != null ? request.getIgstRate() : BigDecimal.ZERO;
-            igstAmount = totalAmountBeforeTax.multiply(igstRate.divide(ONE_HUNDRED))
-                    .setScale(2, RoundingMode.HALF_UP);
+            igstAmount = totalAmountBeforeTax.multiply(igstRate.divide(ONE_HUNDRED)).setScale(2, RoundingMode.HALF_UP);
         }
 
         BigDecimal totalTaxAmount = cgstAmount.add(sgstAmount).add(igstAmount);
         BigDecimal totalAmountAfterTax = totalAmountBeforeTax.add(totalTaxAmount);
-
-        // 4. Convert total to words
         String totalInWords = amountInWordsUtil.convertToWords(totalAmountAfterTax);
 
-        // 5. Build the main Invoice entity
         Invoice invoice = Invoice.builder()
                 .company(company)
                 .invoiceNumber(invoiceNumber)
@@ -139,20 +124,19 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .jurisdictionCity(company.getCity())
                 .termsAndConditions(request.getTermsAndConditions())
                 .pdfUrl(request.getPdfUrl())
+                .status("Unpaid")
                 .build();
 
-        // 6. Set the back-reference from items to the invoice
         for (InvoiceItem item : items) {
             item.setInvoice(invoice);
         }
 
-        // 7. Save the invoice
         Invoice savedInvoice = invoiceRepository.save(invoice);
-
         return invoiceToResponse(savedInvoice);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<InvoiceResponse> getAllInvoices(User currentUser) {
         Company company = getCompanyFromUser(currentUser);
         return invoiceRepository.findByCompanyId(company.getId())
@@ -162,6 +146,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public InvoiceResponse getInvoiceById(Long invoiceId, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
         Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
@@ -170,6 +155,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public InvoiceDetailResponse getInvoiceDetailsById(Long invoiceId, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
         Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
@@ -197,7 +183,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .shippedToAddress(invoice.getShippedToAddress())
                 .shippedToGstin(invoice.getShippedToGstin())
                 .shippedToState(invoice.getShippedToState())
-                .shippedToCode(invoice.getShippedToCode()) // <-- FIXED HERE
+                .shippedToCode(invoice.getShippedToCode())
                 .items(invoice.getItems().stream().map(item ->
                         InvoiceItemDto.builder()
                                 .description(item.getDescription())
@@ -267,15 +253,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (companyStateCode != null && companyStateCode.equals(clientStateCode)) {
             cgstRate = request.getCgstRate() != null ? request.getCgstRate() : BigDecimal.ZERO;
             sgstRate = request.getSgstRate() != null ? request.getSgstRate() : BigDecimal.ZERO;
-
-            cgstAmount = totalAmountBeforeTax.multiply(cgstRate.divide(ONE_HUNDRED))
-                    .setScale(2, RoundingMode.HALF_UP);
-            sgstAmount = totalAmountBeforeTax.multiply(sgstRate.divide(ONE_HUNDRED))
-                    .setScale(2, RoundingMode.HALF_UP);
+            cgstAmount = totalAmountBeforeTax.multiply(cgstRate.divide(ONE_HUNDRED)).setScale(2, RoundingMode.HALF_UP);
+            sgstAmount = totalAmountBeforeTax.multiply(sgstRate.divide(ONE_HUNDRED)).setScale(2, RoundingMode.HALF_UP);
         } else {
             igstRate = request.getIgstRate() != null ? request.getIgstRate() : BigDecimal.ZERO;
-            igstAmount = totalAmountBeforeTax.multiply(igstRate.divide(ONE_HUNDRED))
-                    .setScale(2, RoundingMode.HALF_UP);
+            igstAmount = totalAmountBeforeTax.multiply(igstRate.divide(ONE_HUNDRED)).setScale(2, RoundingMode.HALF_UP);
         }
 
         BigDecimal totalTaxAmount = cgstAmount.add(sgstAmount).add(igstAmount);
@@ -337,17 +319,29 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<InvoiceResponse> getInvoicesByClientId(Long clientId, User currentUser) {
         Company company = getCompanyFromUser(currentUser);
 
         Client client = clientRepository.findByIdAndCompanyId(clientId, company.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
-        // <-- FIXED HERE: Using getClientName()
         return invoiceRepository.findByBilledToNameAndCompanyId(client.getClientName(), company.getId())
                 .stream()
                 .map(this::invoiceToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public InvoiceResponse markAsPaid(Long invoiceId, User currentUser) {
+        Company company = getCompanyFromUser(currentUser);
+        Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", invoiceId));
+
+        invoice.setStatus("Paid");
+        Invoice saved = invoiceRepository.save(invoice);
+        return invoiceToResponse(saved);
     }
 
     // --- HELPER METHODS ---
@@ -368,6 +362,16 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .billedToName(invoice.getBilledToName())
                 .totalAmountAfterTax(invoice.getTotalAmountAfterTax())
                 .pdfUrl(invoice.getPdfUrl())
+                .status(invoice.getStatus() != null ? invoice.getStatus() : "Unpaid")
+                .items(invoice.getItems() != null ? invoice.getItems().stream().map(item ->
+                        InvoiceItemDto.builder()
+                                .description(item.getDescription())
+                                .hsnCode(item.getHsnCode())
+                                .uom(item.getUom())
+                                .quantity(item.getQuantity())
+                                .rate(item.getRate())
+                                .build()
+                ).collect(Collectors.toList()) : null)
                 .build();
     }
 }
