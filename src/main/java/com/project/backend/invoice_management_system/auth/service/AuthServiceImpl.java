@@ -11,6 +11,7 @@ import com.project.backend.invoice_management_system.company.model.Company;
 import com.project.backend.invoice_management_system.company.repository.CompanyRepository;
 import com.project.backend.invoice_management_system.security.config.JwtUtils;
 import com.project.backend.invoice_management_system.common.exception.EmailAlreadyExistsException;
+import com.project.backend.invoice_management_system.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +19,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -102,6 +105,21 @@ public class AuthServiceImpl implements AuthService {
 
         currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(currentUser);
+    }
+
+    @Override
+    @Transactional
+    public String forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        // Generate a random 8-character password
+        String tempPassword = UUID.randomUUID().toString().substring(0, 8) + "Aa1@";
+
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        userRepository.save(user);
+
+        return tempPassword;
     }
 
     private String generateDefaultPrefix(String companyName) {

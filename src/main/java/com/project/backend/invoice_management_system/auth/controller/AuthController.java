@@ -4,6 +4,7 @@ import com.project.backend.invoice_management_system.auth.dto.JwtResponse;
 import com.project.backend.invoice_management_system.auth.dto.LoginRequest;
 import com.project.backend.invoice_management_system.auth.dto.RegisterRequest;
 import com.project.backend.invoice_management_system.auth.dto.ChangePasswordRequest;
+import com.project.backend.invoice_management_system.auth.dto.ForgotPasswordRequest;
 import com.project.backend.invoice_management_system.auth.service.AuthService;
 import com.project.backend.invoice_management_system.auth.model.User;
 import com.project.backend.invoice_management_system.common.dto.ApiResponse;
@@ -61,6 +62,15 @@ public class AuthController {
     ) {
         authService.changePassword(request, user);
         return ResponseBuilder.ok("Password changed successfully");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        String newPassword = authService.forgotPassword(request.getEmail());
+        // Note: For production, do NOT return the password in the response. Send an email instead.
+        return ResponseBuilder.ok("Password reset successfully. Your new temporary password is: " + newPassword);
     }
 
     private void setAuthCookie(HttpServletResponse response, String token) {
