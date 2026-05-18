@@ -30,4 +30,12 @@ public interface AuthService {
      * @param currentUser The authenticated user
      */
     void changePassword(ChangePasswordRequest request, User currentUser);
+
+    /**
+     * Resets the password for the given email to a temporary one.
+     *
+     * @param email The user's email
+     * @return The new temporary password
+     */
+    String forgotPassword(String email);
 }
