@@ -14,13 +14,18 @@ import com.project.backend.invoice_management_system.invoice.dto.InvoiceItemDto;
 import com.project.backend.invoice_management_system.invoice.model.Invoice;
 import com.project.backend.invoice_management_system.invoice.model.InvoiceItem;
 import com.project.backend.invoice_management_system.invoice.repository.InvoiceRepository;
+import com.project.backend.invoice_management_system.storage.service.SupabaseStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +36,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final NumberSequenceService numberSequenceService;
     private final AmountInWordsUtil amountInWordsUtil;
     private final ClientRepository clientRepository;
+    private final SupabaseStorageService supabaseStorageService;
+
+    @Value("${supabase.url}")
+    private String supabaseUrl;
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
@@ -342,6 +351,48 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setStatus("Paid");
         Invoice saved = invoiceRepository.save(invoice);
         return invoiceToResponse(saved);
+    }
+
+    // UPDATED METHOD: Handle PDF Upload using the correct byte[] interface signature
+    @Override
+    @Transactional
+    public InvoiceDetailResponse uploadPdf(Long invoiceId, MultipartFile file, User currentUser) {
+        Company company = getCompanyFromUser(currentUser);
+        Invoice invoice = invoiceRepository.findByIdAndCompanyId(invoiceId, company.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", "id", invoiceId));
+
+        try {
+            // Safely format the file name
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isEmpty()) {
+                originalFilename = "invoice.pdf";
+            }
+            originalFilename = originalFilename.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+
+            // Create a unique path for the object
+            String path = "invoices/" + company.getId() + "/" + UUID.randomUUID() + "-" + originalFilename;
+
+            // Upload the file using the exact method signature from your interface
+            String fileName = supabaseStorageService.upload(
+                    "document",
+                    path,
+                    file.getBytes(),
+                    file.getContentType() != null ? file.getContentType() : "application/pdf"
+            );
+
+            // Construct the public URL
+            String publicUrl = supabaseUrl + "/storage/v1/object/public/document/" + fileName;
+
+            // Save the URL to the database
+            invoice.setPdfUrl(publicUrl);
+            Invoice saved = invoiceRepository.save(invoice);
+
+            // Return updated details to the frontend
+            return getInvoiceDetailsById(saved.getId(), currentUser);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read PDF file for upload", e);
+        }
     }
 
     // --- HELPER METHODS ---
