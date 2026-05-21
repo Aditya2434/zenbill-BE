@@ -30,23 +30,26 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(contentType != null && !contentType.isBlank() ? contentType : MediaType.APPLICATION_OCTET_STREAM_VALUE));
+
+            // Supabase requires BOTH the Bearer token and the apikey header
             headers.setBearerAuth(supabaseConfig.getServiceRoleKey());
+            headers.set("apikey", supabaseConfig.getServiceRoleKey());
             headers.add("x-upsert", "true");
 
             RequestEntity<byte[]> request = new RequestEntity<>(bytes, headers, HttpMethod.POST, URI.create(url));
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            
+
             if (!response.getStatusCode().is2xxSuccessful()) {
                 String errorBody = response.getBody() != null ? response.getBody() : "No error body";
-                throw new IllegalStateException("Supabase upload failed with status " + response.getStatusCode() + 
-                    " for URL: " + url + ". Error: " + errorBody);
+                throw new IllegalStateException("Supabase upload failed with status " + response.getStatusCode() +
+                        " for URL: " + url + ". Error: " + errorBody);
             }
-            
+
             System.out.println("✅ Successfully uploaded to Supabase: " + path);
             return path;
         } catch (Exception e) {
-            System.err.println("❌ Failed to upload to Supabase. URL: " + url + 
-                ", Bucket: " + useBucket + ", Path: " + path + ". Error: " + e.getMessage());
+            System.err.println("❌ Failed to upload to Supabase. URL: " + url +
+                    ", Bucket: " + useBucket + ", Path: " + path + ". Error: " + e.getMessage());
             throw new IllegalStateException("Failed to upload to Supabase: " + e.getMessage(), e);
         }
     }
@@ -62,7 +65,10 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Supabase requires BOTH the Bearer token and the apikey header
         headers.setBearerAuth(supabaseConfig.getServiceRoleKey());
+        headers.set("apikey", supabaseConfig.getServiceRoleKey());
 
         String body = "{\"expiresIn\":" + expires + "}";
         HttpEntity<String> entity = new HttpEntity<>(body, headers);
@@ -109,27 +115,28 @@ public class SupabaseStorageServiceImpl implements SupabaseStorageService {
 
         try {
             HttpHeaders headers = new HttpHeaders();
+
+            // Supabase requires BOTH the Bearer token and the apikey header
             headers.setBearerAuth(supabaseConfig.getServiceRoleKey());
+            headers.set("apikey", supabaseConfig.getServiceRoleKey());
 
             RequestEntity<Void> request = new RequestEntity<>(headers, HttpMethod.GET, URI.create(url));
             ResponseEntity<byte[]> response = restTemplate.exchange(request, byte[].class);
-            
+
             if (!response.getStatusCode().is2xxSuccessful()) {
                 String errorBody = response.getBody() != null ? new String(response.getBody()) : "No error body";
-                throw new IllegalStateException("Supabase download failed with status " + response.getStatusCode() + 
-                    " for URL: " + url + ". Error: " + errorBody);
+                throw new IllegalStateException("Supabase download failed with status " + response.getStatusCode() +
+                        " for URL: " + url + ". Error: " + errorBody);
             }
-            
+
             if (response.getBody() == null) {
                 throw new IllegalStateException("Supabase download returned null body for URL: " + url);
             }
-            
+
             return response.getBody();
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to download from Supabase. URL: " + url + 
-                ", Bucket: " + useBucket + ", Path: " + path + ". Error: " + e.getMessage(), e);
+            throw new IllegalStateException("Failed to download from Supabase. URL: " + url +
+                    ", Bucket: " + useBucket + ", Path: " + path + ". Error: " + e.getMessage(), e);
         }
     }
 }
-
-

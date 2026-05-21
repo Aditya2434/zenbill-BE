@@ -9,9 +9,11 @@ import com.project.backend.invoice_management_system.common.dto.ApiResponse;
 import com.project.backend.invoice_management_system.common.util.ResponseBuilder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -83,6 +85,17 @@ public class InvoiceController {
             @AuthenticationPrincipal User user
     ) {
         InvoiceResponse response = invoiceService.markAsPaid(invoiceId, user);
+        return ResponseBuilder.ok(response);
+    }
+
+    // NEW ENDPOINT: Upload PDF for a specific invoice
+    @PostMapping(value = "/{invoiceId}/upload-pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<InvoiceDetailResponse>> uploadPdf(
+            @PathVariable Long invoiceId,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User user
+    ) {
+        InvoiceDetailResponse response = invoiceService.uploadPdf(invoiceId, file, user);
         return ResponseBuilder.ok(response);
     }
 }
